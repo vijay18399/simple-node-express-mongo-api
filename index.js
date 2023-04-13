@@ -1,41 +1,38 @@
-// Import express
-let express = require('express');
-// Import Body parser
-let bodyParser = require('body-parser');
-// Import Mongoose
-let mongoose = require('mongoose');
-// Initialize the app
-let app = express();
+const express = require("express");
+const mongoose = require("mongoose");
+const bodyParser = require("body-parser");
+const userRoutes = require("./routes/userRoutes");
+const errorHandler = require("./utils/errorHandler");
+require('dotenv').config();
+const app = express();
 
-// Import routes
-let apiRoutes = require("./api-routes");
-// Configure bodyparser to handle post requests
-app.use(bodyParser.urlencoded({
-    extended: true
-}));
+// Parse JSON request bodies
 app.use(bodyParser.json());
-// Connect to Mongoose and set connection variable
-mongoose.connect('mongodb://localhost/restapi', { useNewUrlParser: true});
 
+// Define the routes for user requests
+app.use("/users", userRoutes);
 
-var db = mongoose.connection;
+// error handling middleware
+app.use(errorHandler);
 
-// Added check for DB connection
+// Start the server
+const port = process.env.PORT || 3000;
+const dbUrl = process.env.DB_URL;
 
-if(!db)
-    console.log("Error connecting db")
-else
-    console.log("Db connected successfully")
-
-// Setup server port
-var port = process.env.PORT || 8080;
-
-// Send message for default URL
-app.get('/', (req, res) => res.send('Hello World with Express'));
-
-// Use Api routes in the App
-app.use('/', apiRoutes);
-// Launch app to listen to specified port
-app.listen(port, function () {
-    console.log("Running RestHub on port " + port);
-});
+// Connect to database and start server
+mongoose
+  .connect(dbUrl, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+    useFindAndModify: false 
+  })
+  .then(() => {
+    console.log("Connected to database");
+    app.listen(port, () => {
+      console.log(`App listening on port ${port}`);
+    });
+  })
+  .catch((error) => {
+    console.error("Error connecting to database:", error.message);
+    process.exit(1);
+  });
